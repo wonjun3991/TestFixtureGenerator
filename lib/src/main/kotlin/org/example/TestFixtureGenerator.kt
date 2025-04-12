@@ -1,17 +1,25 @@
+import java.util.*
+import kotlin.random.Random
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KType
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.jvm.javaField
-import java.util.Date
-import java.util.UUID
-import kotlin.random.Random
-import kotlin.reflect.full.createType
 import kotlin.reflect.jvm.isAccessible
+import kotlin.reflect.jvm.javaField
 
 class TestFixtureGenerator {
+    private val fixedValues = mutableMapOf<KClass<*>, Any?>()
+
+    fun <T : Any> registerValue(type: KClass<T>, value: T) {
+        fixedValues[type] = value
+    }
+
     fun <T : Any> create(kClass: KClass<T>): T {
+        // 3) “클래스 전체”를 등록해 뒀다면, 바로 그 값 반환
+        fixedValues[kClass]?.let { @Suppress("UNCHECKED_CAST") return it as T }
+
+        // 4) 아니면 기존 로직대로 새 인스턴스 생성
         val constructor = kClass.primaryConstructor
             ?: throw IllegalArgumentException("No primary constructor for ${kClass.simpleName}")
         constructor.isAccessible = true
@@ -27,39 +35,51 @@ class TestFixtureGenerator {
             .forEach { property ->
                 property.javaField
                     ?.apply { isAccessible = true }
-                    ?.let { field ->
-                        val randomValue = generateRandomValue(property.returnType)
-                        field.set(instance, randomValue)
-                    }
+                    ?.set(instance, generateRandomValue(property.returnType))
             }
 
         return instance
     }
 
     private fun generateRandomValue(type: KType): Any? {
-        return when (type.classifier) {
+        val klass = type.classifier as? KClass<*>
+        if (klass != null && fixedValues.containsKey(klass)) {
+            return fixedValues[klass]
+        }
+
+        return when (klass) {
             Int::class -> Random.nextInt()
             Long::class -> Random.nextLong()
             Double::class -> Random.nextDouble()
             Float::class -> Random.nextFloat()
             Boolean::class -> Random.nextBoolean()
             String::class -> UUID.randomUUID().toString()
-            Date::class -> Date()
-            List::class -> List(Random.nextInt(1, 5)) { generateRandomValue(type.arguments.firstOrNull()?.type!!) }
-            MutableList::class -> List(Random.nextInt(1, 5)) { generateRandomValue(type.arguments.firstOrNull()?.type!!) }
-            Set::class -> (1..Random.nextInt(1, 5)).map { generateRandomValue(type.arguments.firstOrNull()?.type!!) }.toSet()
-            MutableSet::class -> (1..Random.nextInt(1, 5)).map { generateRandomValue(type.arguments.firstOrNull()?.type!!) }.toSet()
-            Map::class -> (1..Random.nextInt(1, 5)).associate {
-                generateRandomValue(type.arguments.first().type!!) to generateRandomValue(type.arguments.last().type!!)
+            Date::class -> Date(System.currentTimeMillis() - Random.nextLong(100_000))
+
+            List::class, MutableList::class -> {
+                val elemType = type.arguments.firstOrNull()?.type
+                    ?: return emptyList<Any?>()
+                List(Random.nextInt(1, 5)) { generateRandomValue(elemType) }
             }
 
-            MutableMap::class -> (1..Random.nextInt(1, 5)).associate {
-                generateRandomValue(type.arguments.first().type!!) to generateRandomValue(type.arguments.last().type!!)
+            Set::class, MutableSet::class -> {
+                val elemType = type.arguments.firstOrNull()?.type
+                    ?: return emptySet<Any?>()
+                (1..Random.nextInt(1, 5))
+                    .map { generateRandomValue(elemType) }
+                    .toSet()
+            }
+
+            Map::class, MutableMap::class -> {
+                val (k, v) = type.arguments
+                (1..Random.nextInt(1, 5)).associate {
+                    generateRandomValue(k.type!!) to generateRandomValue(v.type!!)
+                }
             }
 
             is KClass<*> -> {
                 @Suppress("UNCHECKED_CAST")
-                create(type.classifier as KClass<Any>)
+                create(klass as KClass<Any>)
             }
 
             else -> null
