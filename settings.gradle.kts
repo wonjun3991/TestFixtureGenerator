@@ -13,3 +13,5 @@ plugins {
 
 rootProject.name = "TestFixtureGenerator"
 include("lib")
+include("examples:kotlin-example")
+include("examples:java-example")
