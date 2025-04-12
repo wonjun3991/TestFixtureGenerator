@@ -18,10 +18,8 @@ class TestFixtureGenerator {
     }
 
     fun <T : Any> create(kClass: KClass<T>): T {
-        // 3) “클래스 전체”를 등록해 뒀다면, 바로 그 값 반환
         fixedValues[kClass]?.let { @Suppress("UNCHECKED_CAST") return it as T }
 
-        // 4) 아니면 기존 로직대로 새 인스턴스 생성
         val constructor = kClass.primaryConstructor
             ?: kClass.constructors.firstOrNull()
             ?: throw IllegalArgumentException("No constructor for ${kClass.simpleName}")
