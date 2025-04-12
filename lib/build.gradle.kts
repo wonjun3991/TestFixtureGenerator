@@ -22,6 +22,7 @@ repositories {
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     api(libs.commons.math3)
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation(libs.guava)
@@ -32,7 +33,7 @@ testing {
         // Configure the built-in test suite
         val test by getting(JvmTestSuite::class) {
             // Use Kotlin Test test framework
-            useKotlinTest("2.0.21")
+            useKotlinTest("2.1.20")
         }
     }
 }
