@@ -15,12 +15,9 @@ class TestFixtureGenerator {
             ?: throw IllegalArgumentException("No primary constructor for ${kClass.simpleName}")
         constructor.isAccessible = true
 
-        val args = constructor.parameters.associateWith { param ->
-            when {
-                param.isOptional -> null
-                else -> generateRandomValue(param.type)
-            }
-        }
+        val args = constructor.parameters
+            .filter { !it.isOptional }
+            .associateWith { generateRandomValue(it.type) }
 
         val instance = constructor.callBy(args)
 
@@ -47,6 +44,11 @@ class TestFixtureGenerator {
             Boolean::class-> Random.nextBoolean()
             String::class -> UUID.randomUUID().toString()
             Date::class   -> Date()
+            Date::class    -> Date()
+            is KClass<*>   -> {
+                @Suppress("UNCHECKED_CAST")
+                create(type.classifier as KClass<Any>)
+            }
             else          -> null
         }
     }
