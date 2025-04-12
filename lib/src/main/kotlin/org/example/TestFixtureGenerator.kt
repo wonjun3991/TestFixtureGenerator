@@ -7,6 +7,7 @@ import kotlin.reflect.jvm.javaField
 import java.util.Date
 import java.util.UUID
 import kotlin.random.Random
+import kotlin.reflect.full.createType
 import kotlin.reflect.jvm.isAccessible
 
 class TestFixtureGenerator {
@@ -37,19 +38,31 @@ class TestFixtureGenerator {
 
     private fun generateRandomValue(type: KType): Any? {
         return when (type.classifier) {
-            Int::class    -> Random.nextInt()
-            Long::class   -> Random.nextLong()
+            Int::class -> Random.nextInt()
+            Long::class -> Random.nextLong()
             Double::class -> Random.nextDouble()
-            Float::class  -> Random.nextFloat()
-            Boolean::class-> Random.nextBoolean()
+            Float::class -> Random.nextFloat()
+            Boolean::class -> Random.nextBoolean()
             String::class -> UUID.randomUUID().toString()
-            Date::class   -> Date()
-            Date::class    -> Date()
-            is KClass<*>   -> {
+            Date::class -> Date()
+            List::class -> List(Random.nextInt(1, 5)) { generateRandomValue(type.arguments.firstOrNull()?.type!!) }
+            MutableList::class -> List(Random.nextInt(1, 5)) { generateRandomValue(type.arguments.firstOrNull()?.type!!) }
+            Set::class -> (1..Random.nextInt(1, 5)).map { generateRandomValue(type.arguments.firstOrNull()?.type!!) }.toSet()
+            MutableSet::class -> (1..Random.nextInt(1, 5)).map { generateRandomValue(type.arguments.firstOrNull()?.type!!) }.toSet()
+            Map::class -> (1..Random.nextInt(1, 5)).associate {
+                generateRandomValue(type.arguments.first().type!!) to generateRandomValue(type.arguments.last().type!!)
+            }
+
+            MutableMap::class -> (1..Random.nextInt(1, 5)).associate {
+                generateRandomValue(type.arguments.first().type!!) to generateRandomValue(type.arguments.last().type!!)
+            }
+
+            is KClass<*> -> {
                 @Suppress("UNCHECKED_CAST")
                 create(type.classifier as KClass<Any>)
             }
-            else          -> null
+
+            else -> null
         }
     }
 }
