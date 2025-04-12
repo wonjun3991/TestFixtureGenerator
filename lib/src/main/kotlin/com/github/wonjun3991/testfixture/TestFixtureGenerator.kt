@@ -23,7 +23,8 @@ class TestFixtureGenerator {
 
         // 4) 아니면 기존 로직대로 새 인스턴스 생성
         val constructor = kClass.primaryConstructor
-            ?: throw IllegalArgumentException("No primary constructor for ${kClass.simpleName}")
+            ?: kClass.constructors.firstOrNull()
+            ?: throw IllegalArgumentException("No constructor for ${kClass.simpleName}")
         constructor.isAccessible = true
 
         val args = constructor.parameters
