@@ -1,3 +1,4 @@
+import com.github.wonjun3991.testfixture.TestFixtureGenerator
 import org.junit.jupiter.api.Test
 import java.util.*
 import kotlin.test.assertNotNull

@@ -1,3 +1,5 @@
+package com.github.wonjun3991.testfixture
+
 import java.util.*
 import kotlin.random.Random
 import kotlin.reflect.KClass

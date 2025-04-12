@@ -1,6 +1,6 @@
 package org.example
 
-import TestFixtureGenerator
+import com.github.wonjun3991.testfixture.TestFixtureGenerator
 import org.junit.jupiter.api.Assertions.assertEquals
 import kotlin.test.Test
 
