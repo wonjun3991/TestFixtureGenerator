@@ -3,14 +3,13 @@ package com.github.wonjun3991.testfixture
 import java.util.*
 import kotlin.random.Random
 import kotlin.reflect.KClass
-import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KType
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
 
-class TestFixtureGenerator {
+object TestFixtureGenerator {
     private val fixedValues = mutableMapOf<KClass<*>, Any?>()
 
     fun <T : Any> registerValue(type: KClass<T>, value: T) {
@@ -26,13 +25,12 @@ class TestFixtureGenerator {
         constructor.isAccessible = true
 
         val args = constructor.parameters
-            .filter { !it.isOptional }
+            .filterNot { it.isOptional }
             .associateWith { generateRandomValue(it.type) }
 
         val instance = constructor.callBy(args)
 
-        kClass.memberProperties
-            .filterIsInstance<KMutableProperty1<T, Any?>>()
+        kClass.memberProperties.toList()
             .forEach { property ->
                 property.javaField
                     ?.apply { isAccessible = true }
@@ -57,13 +55,13 @@ class TestFixtureGenerator {
             String::class -> UUID.randomUUID().toString()
             Date::class -> Date(System.currentTimeMillis() - Random.nextLong(100_000))
 
-            List::class, MutableList::class -> {
+            List::class -> {
                 val elemType = type.arguments.firstOrNull()?.type
-                    ?: return emptyList<Any?>()
+                    ?: return emptyList<KType>()
                 List(Random.nextInt(1, 5)) { generateRandomValue(elemType) }
             }
 
-            Set::class, MutableSet::class -> {
+            Set::class -> {
                 val elemType = type.arguments.firstOrNull()?.type
                     ?: return emptySet<Any?>()
                 (1..Random.nextInt(1, 5))
@@ -71,11 +69,15 @@ class TestFixtureGenerator {
                     .toSet()
             }
 
-            Map::class, MutableMap::class -> {
+            Map::class -> {
                 val (k, v) = type.arguments
                 (1..Random.nextInt(1, 5)).associate {
                     generateRandomValue(k.type!!) to generateRandomValue(v.type!!)
                 }
+            }
+
+            Array::class -> {
+
             }
 
             is KClass<*> -> {

@@ -6,9 +6,9 @@ import kotlin.jvm.JvmClassMappingKt;
 
 public class Main {
     public static void main(String[] args) {
-        TestFixtureGenerator gen = new TestFixtureGenerator();
+        TestFixtureGenerator gen = TestFixtureGenerator.INSTANCE;
         Person person = gen.create(JvmClassMappingKt.getKotlinClass(Person.class));
-        System.out.println(person.getName());
-        System.out.println(person.getAge());
+        System.out.println(person.name());
+        System.out.println(person.age());
     }
 }
