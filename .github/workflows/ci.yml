@@ -1,0 +1,36 @@
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 소스 체크아웃
+      - uses: actions/checkout@v3
+
+      # 2. JDK 21 설정 및 Gradle 캐시
+      - name: Set up JDK 21 and cache Gradle
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'corretto'   # Eclipse Temurin (Adoptium) 빌드
+          java-version: '21'        # JDK 21 사용
+          cache: 'gradle'
+
+      # 3. gradlew 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4. 빌드 및 테스트 수행
+      - name: Build and run tests
+        run: ./gradlew clean test --no-daemon
