@@ -32,5 +32,6 @@ class RegisterClassTest {
         assertEquals(fixedAddress.id, user.address.id)
         assertEquals(fixedAddress.street, user.address.street)
         assertEquals(fixedAddress.city, user.address.city)
+        //githubaction
     }
 }
