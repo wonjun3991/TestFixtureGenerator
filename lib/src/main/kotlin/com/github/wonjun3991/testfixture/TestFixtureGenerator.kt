@@ -49,13 +49,13 @@ object TestFixtureGenerator {
         }
 
         when (type) {
-            Int::class.java    -> return Random.nextInt()
-            Long::class.java   -> return Random.nextLong()
-            Double::class.java -> return Random.nextDouble()
-            Float::class.java  -> return Random.nextFloat()
-            Boolean::class.java-> return Random.nextBoolean()
+            Int::class.javaPrimitiveType, Integer::class.java -> return Random.nextInt()
+            Long::class.javaPrimitiveType, java.lang.Long::class.java -> return Random.nextLong()
+            Double::class.javaPrimitiveType, java.lang.Double::class.java -> return Random.nextDouble()
+            Float::class.javaPrimitiveType, java.lang.Float::class.java -> return Random.nextFloat()
+            Boolean::class.javaPrimitiveType, java.lang.Boolean::class.java -> return Random.nextBoolean()
             String::class.java -> return UUID.randomUUID().toString()
-            Date::class.java   -> return Date(System.currentTimeMillis() - Random.nextLong(100_000))
+            Date::class.java -> return Date(System.currentTimeMillis() - Random.nextLong(100_000))
         }
 
         val (compType, isArray) = when {
@@ -76,10 +76,12 @@ object TestFixtureGenerator {
                     val et = args.getOrNull(0) ?: return emptyList<Any?>()
                     List(Random.nextInt(1, 5)) { generateRandomValue(et) }
                 }
+
                 Set::class.java.isAssignableFrom(raw) -> {
                     val et = args.getOrNull(0) ?: return emptySet<Any?>()
                     (1..Random.nextInt(1, 5)).map { generateRandomValue(et) }.toSet()
                 }
+
                 Map::class.java.isAssignableFrom(raw) -> {
                     val kt = args.getOrNull(0)!!
                     val vt = args.getOrNull(1)!!
@@ -87,6 +89,7 @@ object TestFixtureGenerator {
                         generateRandomValue(kt) to generateRandomValue(vt)
                     }
                 }
+
                 else -> null
             }
         }
