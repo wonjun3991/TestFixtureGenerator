@@ -1,91 +1,100 @@
 package com.github.wonjun3991.testfixture
 
+import java.lang.reflect.GenericArrayType
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
 import java.util.*
 import kotlin.random.Random
 import kotlin.reflect.KClass
-import kotlin.reflect.KType
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.jvm.isAccessible
-import kotlin.reflect.jvm.javaField
 
 object TestFixtureGenerator {
-    private val fixedValues = mutableMapOf<KClass<*>, Any?>()
+    private val fixedValues = mutableMapOf<Class<*>, Any?>()
 
-    fun <T : Any> registerValue(type: KClass<T>, value: T) {
+    @JvmStatic
+    fun <T : Any> registerValue(type: Class<T>, value: T) {
         fixedValues[type] = value
     }
 
-    fun <T : Any> create(kClass: KClass<T>): T {
-        fixedValues[kClass]?.let { @Suppress("UNCHECKED_CAST") return it as T }
+    @JvmStatic
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> create(clazz: Class<T>): T {
+        fixedValues[clazz]?.let { return it as T }
 
-        val constructor = kClass.primaryConstructor
-            ?: kClass.constructors.firstOrNull()
-            ?: throw IllegalArgumentException("No constructor for ${kClass.simpleName}")
-        constructor.isAccessible = true
+        val ctor = clazz.declaredConstructors
+            .firstOrNull { it.parameterCount > 0 }
+            ?: clazz.declaredConstructors.firstOrNull()
+            ?: throw IllegalArgumentException("No constructor for ${clazz.simpleName}")
+        ctor.isAccessible = true
 
-        val args = constructor.parameters
-            .filterNot { it.isOptional }
-            .associateWith { generateRandomValue(it.type) }
+        val args = ctor.genericParameterTypes.map { generateRandomValue(it) }.toTypedArray()
+        val instance = ctor.newInstance(*args) as T
 
-        val instance = constructor.callBy(args)
-
-        kClass.memberProperties.toList()
-            .forEach { property ->
-                property.javaField
-                    ?.apply { isAccessible = true }
-                    ?.set(instance, generateRandomValue(property.returnType))
-            }
+        clazz.declaredFields.forEach { field ->
+            field.isAccessible = true
+            field.set(instance, generateRandomValue(field.genericType))
+        }
 
         return instance
     }
 
-    private fun generateRandomValue(type: KType): Any? {
-        val klass = type.classifier as? KClass<*>
-        if (klass != null && fixedValues.containsKey(klass)) {
-            return fixedValues[klass]
+    inline fun <reified T : Any> create(kClass: KClass<T>): T =
+        create(kClass.java)
+
+    fun <T : Any> registerValue(kClass: KClass<T>, value: T) =
+        registerValue(kClass.java, value)
+
+    private fun generateRandomValue(type: Type): Any? {
+        if (type is Class<*> && fixedValues.containsKey(type)) {
+            return fixedValues[type]
         }
 
-        return when (klass) {
-            Int::class -> Random.nextInt()
-            Long::class -> Random.nextLong()
-            Double::class -> Random.nextDouble()
-            Float::class -> Random.nextFloat()
-            Boolean::class -> Random.nextBoolean()
-            String::class -> UUID.randomUUID().toString()
-            Date::class -> Date(System.currentTimeMillis() - Random.nextLong(100_000))
+        when (type) {
+            Int::class.java    -> return Random.nextInt()
+            Long::class.java   -> return Random.nextLong()
+            Double::class.java -> return Random.nextDouble()
+            Float::class.java  -> return Random.nextFloat()
+            Boolean::class.java-> return Random.nextBoolean()
+            String::class.java -> return UUID.randomUUID().toString()
+            Date::class.java   -> return Date(System.currentTimeMillis() - Random.nextLong(100_000))
+        }
 
-            List::class -> {
-                val elemType = type.arguments.firstOrNull()?.type
-                    ?: return emptyList<KType>()
-                List(Random.nextInt(1, 5)) { generateRandomValue(elemType) }
-            }
+        val (compType, isArray) = when {
+            type is GenericArrayType -> type.genericComponentType to true
+            type is Class<*> && type.isArray -> (type.componentType as Type) to true
+            else -> null to false
+        }
+        if (isArray) {
+            val len = Random.nextInt(1, 5)
+            return Array(len) { generateRandomValue(compType!!) }
+        }
 
-            Set::class -> {
-                val elemType = type.arguments.firstOrNull()?.type
-                    ?: return emptySet<Any?>()
-                (1..Random.nextInt(1, 5))
-                    .map { generateRandomValue(elemType) }
-                    .toSet()
-            }
-
-            Map::class -> {
-                val (k, v) = type.arguments
-                (1..Random.nextInt(1, 5)).associate {
-                    generateRandomValue(k.type!!) to generateRandomValue(v.type!!)
+        if (type is ParameterizedType) {
+            val raw = type.rawType as Class<*>
+            val args = type.actualTypeArguments
+            return when {
+                List::class.java.isAssignableFrom(raw) -> {
+                    val et = args.getOrNull(0) ?: return emptyList<Any?>()
+                    List(Random.nextInt(1, 5)) { generateRandomValue(et) }
                 }
+                Set::class.java.isAssignableFrom(raw) -> {
+                    val et = args.getOrNull(0) ?: return emptySet<Any?>()
+                    (1..Random.nextInt(1, 5)).map { generateRandomValue(et) }.toSet()
+                }
+                Map::class.java.isAssignableFrom(raw) -> {
+                    val kt = args.getOrNull(0)!!
+                    val vt = args.getOrNull(1)!!
+                    (1..Random.nextInt(1, 5)).associate {
+                        generateRandomValue(kt) to generateRandomValue(vt)
+                    }
+                }
+                else -> null
             }
-
-            Array::class -> {
-
-            }
-
-            is KClass<*> -> {
-                @Suppress("UNCHECKED_CAST")
-                create(klass as KClass<Any>)
-            }
-
-            else -> null
         }
+
+        if (type is Class<*>) {
+            @Suppress("UNCHECKED_CAST")
+            return create(type as Class<Any>)
+        }
+        return null
     }
 }

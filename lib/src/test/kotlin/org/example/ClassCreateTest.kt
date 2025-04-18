@@ -12,8 +12,7 @@ class ClassCreateTest {
             val requiredValue: String,
         )
 
-        val generator = TestFixtureGenerator()
-        val testClass = generator.create(ValVarTestClass::class)
+        val testClass = TestFixtureGenerator.create(ValVarTestClass::class)
 
         assertNotNull(testClass.optionalValue)
         assertNotNull(testClass.requiredValue)
@@ -26,8 +25,7 @@ class ClassCreateTest {
             var mutableValue: String,
         )
 
-        val generator = TestFixtureGenerator()
-        val testClass = generator.create(FinalPropertyClass::class)
+        val testClass = TestFixtureGenerator.create(FinalPropertyClass::class)
 
         assertNotNull(testClass.finalValue)
         assertNotNull(testClass.mutableValue)
@@ -45,8 +43,7 @@ class ClassCreateTest {
             val date: Date,
         )
 
-        val generator = TestFixtureGenerator()
-        val testClass = generator.create(BasicClass::class)
+        val testClass = TestFixtureGenerator.create(BasicClass::class)
 
         assertNotNull(testClass.int)
         assertNotNull(testClass.long)
@@ -68,8 +65,7 @@ class ClassCreateTest {
             val strings: List<String>,
         )
 
-        val generator = TestFixtureGenerator()
-        val testClass = generator.create(ListClass::class)
+        val testClass = TestFixtureGenerator.create(ListClass::class)
 
         assertNotNull(testClass.ints)
         assertTrue { testClass.ints.isNotEmpty() }
@@ -101,8 +97,7 @@ class ClassCreateTest {
             val strings: Set<String>,
         )
 
-        val generator = TestFixtureGenerator()
-        val testClass = generator.create(SetClass::class)
+        val testClass = TestFixtureGenerator.create(SetClass::class)
 
         assertNotNull(testClass.ints)
         assertTrue { testClass.ints.isNotEmpty() }
@@ -135,8 +130,7 @@ class ClassCreateTest {
             val intToString: Map<Int, String>,
         )
 
-        val generator = TestFixtureGenerator()
-        val testClass = generator.create(MapClass::class)
+        val testClass = TestFixtureGenerator.create(MapClass::class)
 
         assertNotNull(testClass.ints)
         assertTrue { testClass.ints.isNotEmpty() }

@@ -11,8 +11,7 @@ class NestedClassCreateTest {
         data class Address(val city: String = "Seoul", val zip: Int = 12345)
         data class User(val name: String = "kim", val age: Int = 20, val address: Address)
 
-        val gen = TestFixtureGenerator()
-        val user = gen.create(User::class)
+        val user = TestFixtureGenerator.create(User::class)
 
         // Type Check
         assertEquals(user::class, User::class)

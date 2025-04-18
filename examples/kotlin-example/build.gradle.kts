@@ -9,7 +9,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.wonjun3991:TestFixtureGenerator:v1.2.0")
+    implementation(project(":lib"))
 }
 
 application {
